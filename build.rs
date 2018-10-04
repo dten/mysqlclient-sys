@@ -9,9 +9,13 @@ use std::process::Command;
 fn main() {
     if pkg_config::probe_library("mysqlclient").is_ok() {
         // pkg_config did everything for us
-        return
+        return;
     } else if try_vcpkg() {
-        // vcpkg did everything for us
+        // vcpkg did everything for us.. except these
+        if cfg!(windows) {
+            println!("cargo:rustc-link-lib=dylib=gdi32");
+            println!("cargo:rustc-link-lib=dylib=user32");
+        }
         return;
     } else if let Ok(path) = env::var("MYSQLCLIENT_LIB_DIR") {
         println!("cargo:rustc-link-search=native={}", path);
@@ -19,9 +23,9 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", path);
     }
 
-    if cfg!(all(windows, target_env="gnu")) {
+    if cfg!(all(windows, target_env = "gnu")) {
         println!("cargo:rustc-link-lib=dylib=mysql");
-    } else if cfg!(all(windows, target_env="msvc")) {
+    } else if cfg!(all(windows, target_env = "msvc")) {
         println!("cargo:rustc-link-lib=static=mysqlclient");
     } else {
         println!("cargo:rustc-link-lib=mysqlclient");
